@@ -12,11 +12,11 @@ Implemented a simple ERC20 vault that tracks per-user balances per token, expose
 
 ## Task 2: Backend API Configuration
 
-<!-- Describe your backend configuration and integration approach -->
+Configured the Express backend to connect to the deployed TokenVault contract via RPC and updated the ABI to the compiled contract artifact. Added accurate gas estimation via ethers v6 and improved error messages for common vault reverts (InsufficientFunds/InsufficientAllowance). The backend now exposes working read and estimate endpoints against the deployed contract.
 
 ## Task 3: Next.js Frontend
 
-<!-- Describe your frontend architecture and UI/UX decisions -->
+Connected the prebuilt Next.js UI to the backend API and wired MetaMask flow. The vault page now sends `userAddress` for gas estimation and supports executing deposit/withdraw transactions directly via MetaMask using the configured contract address.
 
 ## Design Decisions
 
@@ -25,6 +25,13 @@ Implemented a simple ERC20 vault that tracks per-user balances per token, expose
 ## Integration
 
 <!-- How do the three components work together? -->
+
+## Handy Hardhat Tasks
+
+Added simple Hardhat tasks to streamline local testing:
+- `deploy-mock-erc20` to deploy a test token with initial supply
+- `approve-token` to grant vault allowance
+- `check-allowance` to verify allowance and balance for an owner/spender
 
 ## Assumptions
 
@@ -45,15 +52,31 @@ Implemented a simple ERC20 vault that tracks per-user balances per token, expose
 
 ### Backend API Configuration
 ```bash
-# Your configuration instructions here
-# - Environment variables used
-# - Contract ABI updates
-# - Any customizations made
+# Create backend/.env
+PORT=4000
+RPC_URL=http://127.0.0.1:8545
+CONTRACT_ADDRESS=<TOKEN_VAULT_ADDRESS>
+
+# Update ABI in backend/src/config/blockchain.js
+# (copied from artifacts/contracts/TokenVault.sol/TokenVault.json)
+
+# Run backend
+cd backend
+npm run dev
 ```
 
 ### Next.js Frontend
 ```bash
-# Your instructions here
+# Create frontend/.env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+NEXT_PUBLIC_CONTRACT_ADDRESS=<TOKEN_VAULT_ADDRESS>
+NEXT_PUBLIC_CHAIN_ID=31337
+NEXT_PUBLIC_NETWORK_NAME=HARDHAT
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+
+# Run frontend
+cd frontend
+npm run dev
 ```
 
 ## Additional Notes
