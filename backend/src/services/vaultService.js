@@ -18,6 +18,17 @@ class VaultService {
     }
   }
 
+  normalizeEthersError(error) {
+    const message = error?.message || '';
+    if (message.includes('InsufficientFunds')) {
+      return 'InsufficientFunds: user has no vault balance for this token';
+    }
+    if (message.includes('InsufficientAllowance')) {
+      return 'InsufficientAllowance: token allowance for the vault is too low';
+    }
+    return message || 'Unknown error';
+  }
+
   async getBalance(userAddress, tokenAddress) {
     try {
       if (!this.contract) {
@@ -49,7 +60,7 @@ class VaultService {
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'Failed to get balance',
+        error: this.normalizeEthersError(error) || 'Failed to get balance',
       };
     }
   }
@@ -84,7 +95,7 @@ class VaultService {
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'Failed to get total deposits',
+        error: this.normalizeEthersError(error) || 'Failed to get total deposits',
       };
     }
   }
@@ -118,12 +129,12 @@ class VaultService {
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'Failed to get contract status',
+        error: this.normalizeEthersError(error) || 'Failed to get contract status',
       };
     }
   }
 
-  async estimateDeposit(tokenAddress, amount) {
+  async estimateDeposit(tokenAddress, amount, userAddress) {
     try {
       if (!this.contract) {
         return {
@@ -132,15 +143,17 @@ class VaultService {
         };
       }
 
-      if (!ethers.isAddress(tokenAddress)) {
+      if (!ethers.isAddress(tokenAddress) || !ethers.isAddress(userAddress)) {
         return {
           success: false,
-          error: 'Invalid token address format',
+          error: 'Invalid address format',
         };
       }
 
       const amountWei = ethers.parseEther(amount);
-      const gasEstimate = await this.contract.estimateGasDeposit(tokenAddress, amountWei);
+      const gasEstimate = await this.contract
+        .getFunction('deposit')
+        .estimateGas(tokenAddress, amountWei, { from: userAddress });
 
       return {
         success: true,
@@ -153,12 +166,12 @@ class VaultService {
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'Failed to estimate deposit gas',
+        error: this.normalizeEthersError(error) || 'Failed to estimate deposit gas',
       };
     }
   }
 
-  async estimateWithdraw(tokenAddress, amount) {
+  async estimateWithdraw(tokenAddress, amount, userAddress) {
     try {
       if (!this.contract) {
         return {
@@ -167,15 +180,17 @@ class VaultService {
         };
       }
 
-      if (!ethers.isAddress(tokenAddress)) {
+      if (!ethers.isAddress(tokenAddress) || !ethers.isAddress(userAddress)) {
         return {
           success: false,
-          error: 'Invalid token address format',
+          error: 'Invalid address format',
         };
       }
 
       const amountWei = ethers.parseEther(amount);
-      const gasEstimate = await this.contract.estimateGasWithdraw(tokenAddress, amountWei);
+      const gasEstimate = await this.contract
+        .getFunction('withdraw')
+        .estimateGas(tokenAddress, amountWei, { from: userAddress });
 
       return {
         success: true,
@@ -188,7 +203,7 @@ class VaultService {
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'Failed to estimate withdraw gas',
+        error: this.normalizeEthersError(error) || 'Failed to estimate withdraw gas',
       };
     }
   }

@@ -32,6 +32,19 @@ contract TokenVault is Ownable, Pausable, ReentrancyGuard {
 
     constructor() Ownable(msg.sender) {}
 
+    /// @notice Get the total tokens held by the vault for a specific ERC20.
+    /// @param tokenAddress The ERC20 token address.
+    function totalDeposits(address tokenAddress) external view returns (uint256) {
+        return total[tokenAddress];
+    }
+
+    /// @notice Get the user's balance in the vault for a specific ERC20.
+    /// @param user The user address.
+    /// @param tokenAddress The ERC20 token address.
+    function balanceOf(address user, address tokenAddress) external view returns (uint256) {
+        return balances[user][tokenAddress];
+    }
+
     /// @notice Deposit ERC20 tokens into the vault.
     /// @param tokenAddress The ERC20 token address.
     /// @param amount The amount to deposit.

@@ -3,6 +3,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ethers";
 import "./tasks/deployMockERC20";
+import "./tasks/checkAllowance";
 import "./tasks/approveToken";
 
 const config: HardhatUserConfig =  {

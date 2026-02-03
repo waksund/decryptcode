@@ -59,8 +59,8 @@ describe("TokenVault", function () {
     const receipt = (await tx.wait()) as ContractTransactionReceipt;
     const block = await ethers.provider.getBlock(receipt.blockNumber);
 
-    const total = await vault.total(await token.getAddress());
-    const balance = await vault.balances(user.address, await token.getAddress());
+    const total = await vault.totalDeposits(await token.getAddress());
+    const balance = await vault.balanceOf(user.address, await token.getAddress());
     expect(total).to.equal(amount);
     expect(balance).to.equal(amount);
 
@@ -83,8 +83,8 @@ describe("TokenVault", function () {
     const receipt = (await tx.wait()) as ContractTransactionReceipt;
     const block = await ethers.provider.getBlock(receipt.blockNumber);
 
-    const total = await vault.total(await token.getAddress());
-    const balance = await vault.balances(user.address, await token.getAddress());
+    const total = await vault.totalDeposits(await token.getAddress());
+    const balance = await vault.balanceOf(user.address, await token.getAddress());
     expect(total).to.equal(amount - withdrawAmount);
     expect(balance).to.equal(amount - withdrawAmount);
 

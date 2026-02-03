@@ -78,17 +78,17 @@ export const getStatus = async (req, res) => {
 
 export const estimateDeposit = async (req, res) => {
   try {
-    const { tokenAddress, amount } = req.body;
+    const { tokenAddress, amount, userAddress } = req.body;
     
-    if (!tokenAddress || !amount) {
+    if (!tokenAddress || !amount || !userAddress) {
       res.status(400).json({
         success: false,
-        error: 'tokenAddress and amount are required',
+        error: 'tokenAddress, amount, and userAddress are required',
       });
       return;
     }
 
-    const result = await vaultService.estimateDeposit(tokenAddress, amount);
+    const result = await vaultService.estimateDeposit(tokenAddress, amount, userAddress);
     
     if (result.success) {
       res.json({
@@ -125,17 +125,17 @@ syncStatsServiceConfig().catch(err => {
 
 export const estimateWithdraw = async (req, res) => {
   try {
-    const { tokenAddress, amount } = req.body;
+    const { tokenAddress, amount, userAddress } = req.body;
     
-    if (!tokenAddress || !amount) {
+    if (!tokenAddress || !amount || !userAddress) {
       res.status(400).json({
         success: false,
-        error: 'tokenAddress and amount are required',
+        error: 'tokenAddress, amount, and userAddress are required',
       });
       return;
     }
 
-    const result = await vaultService.estimateWithdraw(tokenAddress, amount);
+    const result = await vaultService.estimateWithdraw(tokenAddress, amount, userAddress);
     
     if (result.success) {
       res.json({
