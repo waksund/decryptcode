@@ -48,7 +48,16 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // Check if MetaMask is installed
       if (typeof window !== 'undefined' && (window as any).ethereum) {
-        const accounts = await (window as any).ethereum.request({
+        const ethereum = (window as any).ethereum;
+        try {
+          await ethereum.request({
+            method: 'wallet_requestPermissions',
+            params: [{ eth_accounts: {} }],
+          });
+        } catch {
+          // Ignore if permissions API is not supported or user rejected.
+        }
+        const accounts = await ethereum.request({
           method: 'eth_requestAccounts',
         });
         if (accounts && accounts.length > 0) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useCallback } from 'react';
 import { vaultService } from '@/services/api';
 
 interface VaultContextType {
@@ -12,8 +12,8 @@ interface VaultContextType {
   fetchBalance: (userAddress: string, tokenAddress: string) => Promise<void>;
   fetchTotalDeposits: (tokenAddress: string) => Promise<void>;
   fetchStatus: () => Promise<void>;
-  estimateDeposit: (tokenAddress: string, amount: string) => Promise<any>;
-  estimateWithdraw: (tokenAddress: string, amount: string) => Promise<any>;
+  estimateDeposit: (tokenAddress: string, amount: string, userAddress: string) => Promise<any>;
+  estimateWithdraw: (tokenAddress: string, amount: string, userAddress: string) => Promise<any>;
 }
 
 const VaultContext = createContext<VaultContextType | undefined>(undefined);
@@ -33,7 +33,7 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalance = async (userAddress: string, tokenAddress: string) => {
+  const fetchBalance = useCallback(async (userAddress: string, tokenAddress: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -48,9 +48,9 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchTotalDeposits = async (tokenAddress: string) => {
+  const fetchTotalDeposits = useCallback(async (tokenAddress: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -65,9 +65,9 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -82,13 +82,13 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const estimateDeposit = async (tokenAddress: string, amount: string) => {
+  const estimateDeposit = useCallback(async (tokenAddress: string, amount: string, userAddress: string) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await vaultService.estimateDeposit(tokenAddress, amount);
+      const result = await vaultService.estimateDeposit(tokenAddress, amount, userAddress);
       if (result.success) {
         return result.data;
       } else {
@@ -101,13 +101,13 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const estimateWithdraw = async (tokenAddress: string, amount: string) => {
+  const estimateWithdraw = useCallback(async (tokenAddress: string, amount: string, userAddress: string) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await vaultService.estimateWithdraw(tokenAddress, amount);
+      const result = await vaultService.estimateWithdraw(tokenAddress, amount, userAddress);
       if (result.success) {
         return result.data;
       } else {
@@ -120,7 +120,7 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const value = {
     balance,

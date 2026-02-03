@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ethers } from 'ethers';
 import { useWallet } from '@/context/WalletContext';
 import { useVault } from '@/context/VaultContext';
+import { CONTRACT_ADDRESS } from '@/config/api';
 import styles from './page.module.css';
 
 export default function VaultPage() {
@@ -25,6 +27,7 @@ export default function VaultPage() {
   const [tokenAddress, setTokenAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [operation, setOperation] = useState<'deposit' | 'withdraw'>('deposit');
+  const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
     if (!isConnected) {
@@ -51,17 +54,17 @@ export default function VaultPage() {
   };
 
   const handleEstimateGas = async () => {
-    if (!tokenAddress || !amount) {
-      alert('Please enter token address and amount');
+    if (!tokenAddress || !amount || !address) {
+      alert('Please enter token address, amount, and connect wallet');
       return;
     }
 
     try {
       let result;
       if (operation === 'deposit') {
-        result = await estimateDeposit(tokenAddress, amount);
+        result = await estimateDeposit(tokenAddress, amount, address);
       } else {
-        result = await estimateWithdraw(tokenAddress, amount);
+        result = await estimateWithdraw(tokenAddress, amount, address);
       }
 
       if (result) {
@@ -72,9 +75,49 @@ export default function VaultPage() {
     }
   };
 
-  const handleExecuteTransaction = () => {
-    // TODO: Implement actual transaction execution
-    alert('Transaction execution needs to be implemented using wallet SDK');
+  const handleExecuteTransaction = async () => {
+    if (!tokenAddress || !amount || !address) {
+      alert('Please enter token address, amount, and connect wallet');
+      return;
+    }
+
+    if (!CONTRACT_ADDRESS) {
+      alert('Contract address is not configured');
+      return;
+    }
+
+    try {
+      setIsExecuting(true);
+      if (typeof window === 'undefined' || !(window as any).ethereum) {
+        throw new Error('MetaMask is not installed');
+      }
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const vault = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        [
+          'function deposit(address tokenAddress, uint256 amount) external',
+          'function withdraw(address tokenAddress, uint256 amount) external',
+        ],
+        signer
+      );
+
+      const amountWei = ethers.parseEther(amount);
+      const tx =
+        operation === 'deposit'
+          ? await vault.deposit(tokenAddress, amountWei)
+          : await vault.withdraw(tokenAddress, amountWei);
+      await tx.wait();
+
+      alert(`Transaction confirmed: ${tx.hash}`);
+      await fetchBalance(address, tokenAddress);
+      await fetchTotalDeposits(tokenAddress);
+    } catch (error: any) {
+      alert(`Transaction failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   if (!isConnected) {
@@ -181,7 +224,7 @@ export default function VaultPage() {
             <button
               className={styles.primaryButton}
               onClick={handleExecuteTransaction}
-              disabled={loading}
+              disabled={loading || isExecuting}
             >
               {operation === 'deposit' ? 'Deposit' : 'Withdraw'}
             </button>

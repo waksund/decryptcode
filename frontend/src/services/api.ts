@@ -17,7 +17,7 @@ export const vaultService = {
       const response = await api.get(
         `/api/vault/balance/${userAddress}/${tokenAddress}`
       );
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error: any) {
       return {
         success: false,
@@ -30,7 +30,7 @@ export const vaultService = {
   getTotalDeposits: async (tokenAddress: string) => {
     try {
       const response = await api.get(`/api/vault/total/${tokenAddress}`);
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error: any) {
       return {
         success: false,
@@ -43,7 +43,7 @@ export const vaultService = {
   getStatus: async () => {
     try {
       const response = await api.get('/api/vault/status');
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error: any) {
       return {
         success: false,
@@ -53,13 +53,14 @@ export const vaultService = {
   },
 
   // Estimate gas for deposit
-  estimateDeposit: async (tokenAddress: string, amount: string) => {
+  estimateDeposit: async (tokenAddress: string, amount: string, userAddress: string) => {
     try {
       const response = await api.post('/api/vault/estimate-deposit', {
         tokenAddress,
         amount,
+        userAddress,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error: any) {
       return {
         success: false,
@@ -69,13 +70,14 @@ export const vaultService = {
   },
 
   // Estimate gas for withdraw
-  estimateWithdraw: async (tokenAddress: string, amount: string) => {
+  estimateWithdraw: async (tokenAddress: string, amount: string, userAddress: string) => {
     try {
       const response = await api.post('/api/vault/estimate-withdraw', {
         tokenAddress,
         amount,
+        userAddress,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error: any) {
       return {
         success: false,
