@@ -8,7 +8,7 @@ Please provide a brief explanation of your approach, design decisions, and any a
 
 ## Task 1: Smart Contract
 
-<!-- Describe your approach to the TokenVault contract -->
+Implemented a simple ERC20 vault that tracks per-user balances per token, emits deposit/withdraw events, and uses OpenZeppelin Ownable/Pausable/ReentrancyGuard for safety. Added deployment tooling: a TokenVault deploy script and task, plus a MockERC20 deploy task that supports initial minting and optional extra minting for test flows.
 
 ## Task 2: Backend API Configuration
 
