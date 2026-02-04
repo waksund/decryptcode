@@ -12,15 +12,18 @@ Implemented a simple ERC20 vault that tracks per-user balances per token, expose
 
 ## Task 2: Backend API Configuration
 
-Configured the Express backend to connect to the deployed TokenVault contract via RPC and updated the ABI to the compiled contract artifact. Added accurate gas estimation via ethers v6 and improved error messages for common vault reverts (InsufficientFunds/InsufficientAllowance). The backend now exposes working read and estimate endpoints against the deployed contract.
+Configured the Express backend to connect to the deployed TokenVault contract via RPC and updated the ABI to the compiled contract artifact. Standardized API responses, logging, and error handling with middleware, and added structured error codes/details for frontend-friendly handling. Implemented request validation with zod at the routing layer so services only receive validated inputs. Added short-lived caching for safe read endpoints (status and total deposits) via a dedicated cache service (noted for future Redis replacement). The backend now exposes working read and estimate endpoints against the deployed contract.
 
 ## Task 3: Next.js Frontend
 
-Connected the prebuilt Next.js UI to the backend API and wired MetaMask flow. The vault page now sends `userAddress` for gas estimation and supports executing deposit/withdraw transactions directly via MetaMask using the configured contract address.
+Connected the prebuilt Next.js UI to the backend API and wired MetaMask flow. Updated the frontend to consume structured API errors (`errorCode` and `errorDetails`) and replaced alert-based feedback with toast notifications via `react-hot-toast`, including a global handler for unhandled errors. The vault page now sends `userAddress` for gas estimation and supports executing deposit/withdraw transactions directly via MetaMask using the configured contract address.
 
 ## Design Decisions
 
-<!-- Explain key design choices across all components -->
+- Centralized error handling: controllers are thin, services throw typed errors with `errorCode`, and the error middleware returns consistent JSON without verbose messages.
+- Validation at the edge: zod schemas validate params/body before hitting service logic to keep services clean and avoid duplicate checks.
+- Cache only safe reads: `status` and `total` are cached with short TTLs to reduce RPC load without risking stale balances.
+- Frontend error UX: toasts provide consistent, non-blocking feedback for API and runtime errors, while keeping error details structured.
 
 ## Integration
 
@@ -39,7 +42,7 @@ Added simple Hardhat tasks to streamline local testing:
 
 ## Challenges & Solutions
 
-<!-- Describe any challenges you encountered and how you solved them -->
+Early on, error responses were inconsistent and required repeated try/catch blocks. This was solved by adding an async handler, response helpers, and a centralized error middleware with structured error codes/details. Input validation was moved to zod middleware to keep service logic focused on contract calls.
 
 ## Setup Instructions
 

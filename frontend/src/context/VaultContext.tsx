@@ -2,13 +2,16 @@
 
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import { vaultService } from '@/services/api';
+import type { ApiError, ApiErrorDetails } from '@/types/api';
+import { formatApiError } from '@/utils/formatApiError';
+import { toast } from 'react-hot-toast';
 
 interface VaultContextType {
   balance: any;
   totalDeposits: any;
   status: any;
   loading: boolean;
-  error: string | null;
+  error: ApiError | null;
   fetchBalance: (userAddress: string, tokenAddress: string) => Promise<void>;
   fetchTotalDeposits: (tokenAddress: string) => Promise<void>;
   fetchStatus: () => Promise<void>;
@@ -31,96 +34,68 @@ export const VaultProvider = ({ children }: { children: React.ReactNode }) => {
   const [totalDeposits, setTotalDeposits] = useState<any>(null);
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  const runRequest = useCallback(
+    async <T,>(
+      action: () => Promise<{ success: boolean; data?: T; errorCode?: string; errorDetails?: ApiErrorDetails }>,
+      onSuccess?: (data: T) => void
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await action();
+      if (result.success) {
+        onSuccess?.(result.data as T);
+        return result.data ?? null;
+      }
+      const apiError = {
+        errorCode: result.errorCode,
+        errorDetails: result.errorDetails,
+      };
+      setError(apiError);
+      toast.error(formatApiError(apiError));
+      return null;
+    } catch {
+      setError({ errorCode: 'UNKNOWN_ERROR' });
+      toast.error('UNKNOWN_ERROR');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+    },
+    []
+  );
 
   const fetchBalance = useCallback(async (userAddress: string, tokenAddress: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await vaultService.getBalance(userAddress, tokenAddress);
-      if (result.success) {
-        setBalance(result.data);
-      } else {
-        setError(result.error);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await runRequest(
+      () => vaultService.getBalance(userAddress, tokenAddress),
+      setBalance
+    );
+  }, [runRequest]);
 
   const fetchTotalDeposits = useCallback(async (tokenAddress: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await vaultService.getTotalDeposits(tokenAddress);
-      if (result.success) {
-        setTotalDeposits(result.data);
-      } else {
-        setError(result.error);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await runRequest(
+      () => vaultService.getTotalDeposits(tokenAddress),
+      setTotalDeposits
+    );
+  }, [runRequest]);
 
   const fetchStatus = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await vaultService.getStatus();
-      if (result.success) {
-        setStatus(result.data);
-      } else {
-        setError(result.error);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await runRequest(() => vaultService.getStatus(), setStatus);
+  }, [runRequest]);
 
   const estimateDeposit = useCallback(async (tokenAddress: string, amount: string, userAddress: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await vaultService.estimateDeposit(tokenAddress, amount, userAddress);
-      if (result.success) {
-        return result.data;
-      } else {
-        setError(result.error);
-        return null;
-      }
-    } catch (err: any) {
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    return await runRequest(() =>
+      vaultService.estimateDeposit(tokenAddress, amount, userAddress)
+    );
+  }, [runRequest]);
 
   const estimateWithdraw = useCallback(async (tokenAddress: string, amount: string, userAddress: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await vaultService.estimateWithdraw(tokenAddress, amount, userAddress);
-      if (result.success) {
-        return result.data;
-      } else {
-        setError(result.error);
-        return null;
-      }
-    } catch (err: any) {
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    return await runRequest(() =>
+      vaultService.estimateWithdraw(tokenAddress, amount, userAddress)
+    );
+  }, [runRequest]);
 
   const value = {
     balance,

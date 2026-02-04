@@ -1,10 +1,26 @@
 import { ethers } from 'ethers';
-import { getProvider, getContract } from '../config/blockchain.js';
+import createError from 'http-errors';
+import { getContract } from '../config/blockchain.js';
+import { ERROR_MESSAGES, ERROR_CODES, CACHE_TTL_MS } from '../config/constants.js';
+import { cacheService } from './cacheService.js';
 
 class VaultService {
   constructor() {
     this.contract = null;
     this.initializeContract();
+  }
+
+  throwBadRequest(code, message) {
+    const error = createError.BadRequest(message);
+    error.code = code;
+    throw error;
+  }
+
+  throwBadRequestWithDetails(code, message, details) {
+    const error = createError.BadRequest(message);
+    error.code = code;
+    error.details = details;
+    throw error;
   }
 
   initializeContract() {
@@ -18,194 +34,114 @@ class VaultService {
     }
   }
 
-  normalizeEthersError(error) {
-    const message = error?.message || '';
-    if (message.includes('InsufficientFunds')) {
-      return 'InsufficientFunds: user has no vault balance for this token';
-    }
-    if (message.includes('InsufficientAllowance')) {
-      return 'InsufficientAllowance: token allowance for the vault is too low';
-    }
-    return message || 'Unknown error';
-  }
-
   async getBalance(userAddress, tokenAddress) {
-    try {
-      if (!this.contract) {
-        return {
-          success: false,
-          error: 'Contract not initialized. Please check your configuration.',
-        };
-      }
-
-      if (!ethers.isAddress(userAddress) || !ethers.isAddress(tokenAddress)) {
-        return {
-          success: false,
-          error: 'Invalid address format',
-        };
-      }
-
-      const balance = await this.contract.balanceOf(userAddress, tokenAddress);
-      const balanceFormatted = ethers.formatEther(balance);
-
-      return {
-        success: true,
-        data: {
-          userAddress,
-          tokenAddress,
-          balance: balance.toString(),
-          balanceFormatted,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.normalizeEthersError(error) || 'Failed to get balance',
-      };
+    if (!this.contract) {
+      this.throwBadRequest(
+        ERROR_CODES.CONTRACT_NOT_INITIALIZED,
+        ERROR_MESSAGES.CONTRACT_NOT_INITIALIZED,
+      );
     }
+
+    const balance = await this.contract.balanceOf(userAddress, tokenAddress);
+    const balanceFormatted = ethers.formatEther(balance);
+
+    return {
+      userAddress,
+      tokenAddress,
+      balance: balance.toString(),
+      balanceFormatted,
+    };
   }
 
   async getTotalDeposits(tokenAddress) {
-    try {
-      if (!this.contract) {
-        return {
-          success: false,
-          error: 'Contract not initialized. Please check your configuration.',
-        };
-      }
-
-      if (!ethers.isAddress(tokenAddress)) {
-        return {
-          success: false,
-          error: 'Invalid token address format',
-        };
-      }
-
-      const total = await this.contract.totalDeposits(tokenAddress);
-      const totalFormatted = ethers.formatEther(total);
-
-      return {
-        success: true,
-        data: {
-          tokenAddress,
-          total: total.toString(),
-          totalFormatted,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.normalizeEthersError(error) || 'Failed to get total deposits',
-      };
+    if (!this.contract) {
+      this.throwBadRequest(
+        ERROR_CODES.CONTRACT_NOT_INITIALIZED,
+        ERROR_MESSAGES.CONTRACT_NOT_INITIALIZED,
+      );
     }
+
+    const cacheKey = `total:${tokenAddress}`;
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const total = await this.contract.totalDeposits(tokenAddress);
+    const totalFormatted = ethers.formatEther(total);
+
+    const data = {
+      tokenAddress,
+      total: total.toString(),
+      totalFormatted,
+    };
+
+    cacheService.set(cacheKey, data, CACHE_TTL_MS.TOTAL_DEPOSITS);
+    return data;
   }
 
-  async getChartServiceEndpoint () {
-    const workspaceServiceConfig = {
-      baseDomain: 'assessment-config.up.railway.app',
-      apiVersion: 'api'
-    };
-    const { baseDomain, apiVersion } = workspaceServiceConfig;
-    return `https://${baseDomain}/${apiVersion}`;
-  };
-
   async getStatus() {
-    try {
-      if (!this.contract) {
-        return {
-          success: false,
-          error: 'Contract not initialized. Please check your configuration.',
-        };
-      }
-
-      const paused = await this.contract.paused();
-
-      return {
-        success: true,
-        data: {
-          paused,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.normalizeEthersError(error) || 'Failed to get contract status',
-      };
+    if (!this.contract) {
+      this.throwBadRequest(
+        ERROR_CODES.CONTRACT_NOT_INITIALIZED,
+        ERROR_MESSAGES.CONTRACT_NOT_INITIALIZED,
+      );
     }
+
+    const cacheKey = 'status';
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const paused = await this.contract.paused();
+
+    const data = {
+      paused,
+    };
+
+    cacheService.set(cacheKey, data, CACHE_TTL_MS.STATUS);
+    return data;
   }
 
   async estimateDeposit(tokenAddress, amount, userAddress) {
-    try {
-      if (!this.contract) {
-        return {
-          success: false,
-          error: 'Contract not initialized. Please check your configuration.',
-        };
-      }
-
-      if (!ethers.isAddress(tokenAddress) || !ethers.isAddress(userAddress)) {
-        return {
-          success: false,
-          error: 'Invalid address format',
-        };
-      }
-
-      const amountWei = ethers.parseEther(amount);
-      const gasEstimate = await this.contract
-        .getFunction('deposit')
-        .estimateGas(tokenAddress, amountWei, { from: userAddress });
-
-      return {
-        success: true,
-        data: {
-          tokenAddress,
-          amount,
-          gasEstimate: gasEstimate.toString(),
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.normalizeEthersError(error) || 'Failed to estimate deposit gas',
-      };
+    if (!this.contract) {
+      this.throwBadRequest(
+        ERROR_CODES.CONTRACT_NOT_INITIALIZED,
+        ERROR_MESSAGES.CONTRACT_NOT_INITIALIZED,
+      );
     }
+
+    const amountWei = ethers.parseEther(amount);
+    const gasEstimate = await this.contract
+      .getFunction('deposit')
+      .estimateGas(tokenAddress, amountWei, { from: userAddress });
+
+    return {
+      tokenAddress,
+      amount,
+      gasEstimate: gasEstimate.toString(),
+    };
   }
 
   async estimateWithdraw(tokenAddress, amount, userAddress) {
-    try {
-      if (!this.contract) {
-        return {
-          success: false,
-          error: 'Contract not initialized. Please check your configuration.',
-        };
-      }
-
-      if (!ethers.isAddress(tokenAddress) || !ethers.isAddress(userAddress)) {
-        return {
-          success: false,
-          error: 'Invalid address format',
-        };
-      }
-
-      const amountWei = ethers.parseEther(amount);
-      const gasEstimate = await this.contract
-        .getFunction('withdraw')
-        .estimateGas(tokenAddress, amountWei, { from: userAddress });
-
-      return {
-        success: true,
-        data: {
-          tokenAddress,
-          amount,
-          gasEstimate: gasEstimate.toString(),
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.normalizeEthersError(error) || 'Failed to estimate withdraw gas',
-      };
+    if (!this.contract) {
+      this.throwBadRequest(
+        ERROR_CODES.CONTRACT_NOT_INITIALIZED,
+        ERROR_MESSAGES.CONTRACT_NOT_INITIALIZED,
+      );
     }
+
+    const amountWei = ethers.parseEther(amount);
+    const gasEstimate = await this.contract
+      .getFunction('withdraw')
+      .estimateGas(tokenAddress, amountWei, { from: userAddress });
+
+    return {
+      tokenAddress,
+      amount,
+      gasEstimate: gasEstimate.toString(),
+    };
   }
 }
 

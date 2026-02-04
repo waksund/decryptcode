@@ -19,9 +19,12 @@ export const vaultService = {
       );
       return { success: true, data: response.data.data };
     } catch (error: any) {
+      const errorCode = error.response?.data?.errorCode || 'NETWORK_ERROR';
+      const errorDetails = error.response?.data?.errorDetails;
       return {
         success: false,
-        error: error.response?.data?.error || error.message,
+        errorCode,
+        errorDetails,
       };
     }
   },
@@ -32,9 +35,12 @@ export const vaultService = {
       const response = await api.get(`/api/vault/total/${tokenAddress}`);
       return { success: true, data: response.data.data };
     } catch (error: any) {
+      const errorCode = error.response?.data?.errorCode || 'NETWORK_ERROR';
+      const errorDetails = error.response?.data?.errorDetails;
       return {
         success: false,
-        error: error.response?.data?.error || error.message,
+        errorCode,
+        errorDetails,
       };
     }
   },
@@ -45,9 +51,12 @@ export const vaultService = {
       const response = await api.get('/api/vault/status');
       return { success: true, data: response.data.data };
     } catch (error: any) {
+      const errorCode = error.response?.data?.errorCode || 'NETWORK_ERROR';
+      const errorDetails = error.response?.data?.errorDetails;
       return {
         success: false,
-        error: error.response?.data?.error || error.message,
+        errorCode,
+        errorDetails,
       };
     }
   },
@@ -62,9 +71,12 @@ export const vaultService = {
       });
       return { success: true, data: response.data.data };
     } catch (error: any) {
+      const errorCode = error.response?.data?.errorCode || 'NETWORK_ERROR';
+      const errorDetails = error.response?.data?.errorDetails;
       return {
         success: false,
-        error: error.response?.data?.error || error.message,
+        errorCode,
+        errorDetails,
       };
     }
   },
@@ -79,9 +91,12 @@ export const vaultService = {
       });
       return { success: true, data: response.data.data };
     } catch (error: any) {
+      const errorCode = error.response?.data?.errorCode || 'NETWORK_ERROR';
+      const errorDetails = error.response?.data?.errorDetails;
       return {
         success: false,
-        error: error.response?.data?.error || error.message,
+        errorCode,
+        errorDetails,
       };
     }
   },
@@ -95,7 +110,7 @@ export const checkHealth = async () => {
   } catch (error: any) {
     return {
       success: false,
-      error: error.message,
+      errorCode: 'NETWORK_ERROR',
     };
   }
 };

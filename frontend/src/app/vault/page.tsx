@@ -7,6 +7,8 @@ import { useWallet } from '@/context/WalletContext';
 import { useVault } from '@/context/VaultContext';
 import { CONTRACT_ADDRESS } from '@/config/api';
 import styles from './page.module.css';
+import { toast } from 'react-hot-toast';
+import { formatApiError } from '@/utils/formatApiError';
 
 export default function VaultPage() {
   const router = useRouter();
@@ -39,7 +41,7 @@ export default function VaultPage() {
 
   const handleFetchBalance = async () => {
     if (!address || !tokenAddress) {
-      alert('Please enter token address');
+      toast.error('Please enter token address');
       return;
     }
     await fetchBalance(address, tokenAddress);
@@ -47,7 +49,7 @@ export default function VaultPage() {
 
   const handleFetchTotal = async () => {
     if (!tokenAddress) {
-      alert('Please enter token address');
+      toast.error('Please enter token address');
       return;
     }
     await fetchTotalDeposits(tokenAddress);
@@ -55,7 +57,7 @@ export default function VaultPage() {
 
   const handleEstimateGas = async () => {
     if (!tokenAddress || !amount || !address) {
-      alert('Please enter token address, amount, and connect wallet');
+      toast.error('Please enter token address, amount, and connect wallet');
       return;
     }
 
@@ -68,21 +70,21 @@ export default function VaultPage() {
       }
 
       if (result) {
-        alert(`Estimated gas: ${result.gasEstimate || 'N/A'}`);
+        toast.success(`Estimated gas: ${result.gasEstimate || 'N/A'}`);
       }
     } catch (error: any) {
-      alert(`Failed to estimate gas: ${error.message}`);
+      toast.error(`Failed to estimate gas: ${error.message}`);
     }
   };
 
   const handleExecuteTransaction = async () => {
     if (!tokenAddress || !amount || !address) {
-      alert('Please enter token address, amount, and connect wallet');
+      toast.error('Please enter token address, amount, and connect wallet');
       return;
     }
 
     if (!CONTRACT_ADDRESS) {
-      alert('Contract address is not configured');
+      toast.error('Contract address is not configured');
       return;
     }
 
@@ -110,11 +112,11 @@ export default function VaultPage() {
           : await vault.withdraw(tokenAddress, amountWei);
       await tx.wait();
 
-      alert(`Transaction confirmed: ${tx.hash}`);
+      toast.success(`Transaction confirmed: ${tx.hash}`);
       await fetchBalance(address, tokenAddress);
       await fetchTotalDeposits(tokenAddress);
     } catch (error: any) {
-      alert(`Transaction failed: ${error.message || 'Unknown error'}`);
+      toast.error(`Transaction failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsExecuting(false);
     }
@@ -239,7 +241,7 @@ export default function VaultPage() {
 
         {error && (
           <div className={styles.errorContainer}>
-            <p className={styles.errorText}>Error: {error}</p>
+            <p className={styles.errorText}>Error: {formatApiError(error)}</p>
           </div>
         )}
       </div>
