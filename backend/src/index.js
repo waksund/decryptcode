@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { vaultRoutes } from './routes/vault.js';
 import { healthRoutes } from './routes/health.js';
 import { requestLogger } from './middleware/requestLogger.js';
@@ -49,6 +51,10 @@ function start() {
   return server;
 }
 
-if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isDirectRun) {
   start();
 }
